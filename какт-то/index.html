@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Побег из класса: Лаборатория юного биолога</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.header {
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.header h1 {
+  color: #4ecca3;
+  font-size: 2em;
+  margin-bottom: 10px;
+}
+
+.header .subtitle {
+  color: #aaa;
+  font-size: 1.1em;
+  margin-bottom: 15px;
+}
+
+.progress-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background: #2d2d44;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ecca3, #3ba882);
+  transition: width 0.3s ease;
+  border-radius: 10px;
+}
+
+.progress-text {
+  color: #4ecca3;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.scene-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scene-container {
+  position: relative;
+  width: 1200px;
+  min-width: 1200px;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.scene-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scene-error {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  padding: 40px;
+  background: rgba(0,0,0,0.9);
+  border-radius: 12px;
+  border: 2px solid #4ecca3;
+}
+
+.scene-error.active {
+  display: block;
+}
+
+.marker {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(30, 30, 50, 0.7);
+  border: 2px solid #4ecca3;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  animation: pulse 2s infinite;
+  z-index: 10;
+}
+
+.marker:hover {
+  transform: scale(1.1);
+}
+
+.marker.solved {
+  background: rgba(78, 204, 163, 0.9);
+  border-color: #3ba882;
+  animation: none;
+}
+
+.marker.locked {
+  border-color: #ffd700;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(78, 204, 163, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(78, 204, 163, 0);
+  }
+}
+
+.marker svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: #4ecca3;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.marker.solved svg {
+  stroke: #fff;
+}
+
+.marker-label {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.marker:hover .marker-label,
+.marker:active .marker-label {
+  opacity: 1;
+}
+
+.controls {
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 24px;
+  background: #4ecca3;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: #3ba882;
+  transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: #2d2d44;
+  color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+  background: #3d3d5c;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background: #2d2d44;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 2px solid #4ecca3;
+}
+
+.modal-content h2 {
+  color: #4ecca3;
+  margin-bottom: 20px;
+  font-size: 1.5em;
+}
+
+.modal-content p {
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+.task-input {
+  width: 100%;
+  padding: 12px;
+  background: #1a1a2e;
+  border: 2px solid #4ecca3;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 1em;
+  margin-bottom: 15px;
+}
+
+.task-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.option-btn {
+  padding: 12px;
+  background: #1a1a2e;
+  border: 2px solid #4ecca3;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.option-btn:hover {
+  background: #4ecca3;
+  color: #1a1a2e;
+}
+
+.option-btn.selected {
+  background: #4ecca3;
+  color: #1a1a2e;
+}
+
+.hint-btn {
+  background: #ffd700;
+  color: #1a1a2e;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+.hint-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.feedback {
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+  display: none;
+}
+
+.feedback.correct {
+  background: rgba(78, 204, 163, 0.2);
+  border: 2px solid #4ecca3;
+  display: block;
+}
+
+.feedback.incorrect {
+  background: rgba(255, 100, 100, 0.2);
+  border: 2px solid #ff6464;
+  display: block;
+}
+
+.start-screen, .final-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #1a1a2e;
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.start-screen.active, .final-screen.active {
+  display: flex;
+}
+
+.start-screen h1, .final-screen h1 {
+  color: #4ecca3;
+  font-size: 3em;
+  margin-bottom: 20px;
+}
+
+.start-screen p, .final-screen p {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+.legend {
+  background: #2d2d44;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  max-width: 500px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.legend-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #4ecca3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.legend-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: #4ecca3;
+  fill: none;
+  stroke-width: 2;
+}
+
+.setup-coords {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0,0,0,0.9);
+  color: #4ecca3;
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px solid #4ecca3;
+  font-family: monospace;
+  font-size: 1.1em;
+  z-index: 300;
+}
+
+.setup-coords.active {
+  display: block;
+}
+
+.scroll-hint {
+  display: none;
+  text-align: center;
+  color: #aaa;
+  margin-top: 10px;
+  font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 1.5em;
+  }
+  
+  .scene-wrapper {
+    height: 60vh;
+  }
+  
+  .scene-container {
+    height: 100%;
+    width: auto;
+  }
+  
+  .scroll-hint {
+    display: block;
+  }
+  
+  .marker {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .marker svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .modal-content {
+    padding: 20px;
+  }
+  
+  .start-screen h1, .final-screen h1 {
+    font-size: 2em;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="start-screen active" id="startScreen">
+  <h1>Побег из класса</h1>
+  <p>Лаборатория юного биолога</p>
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+      </div>
+      <span>Светящаяся метка — нерешённое задание</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-icon" style="background: #4ecca3;">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <span>Зелёная метка — задание решено</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-icon" style="border-color: #ffd700;">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <span>Замок на двери — нужно решить все 5 заданий</span>
+    </div>
+  </div>
+  <p>Нажимайте на метки, решайте задания по биологии и откройте дверь, чтобы выбраться из лаборатории!</p>
+  <button class="btn" onclick="startGame()">Начать игру</button>
+</div>
+
+<div class="final-screen" id="finalScreen">
+  <h1>Поздравляем!</h1>
+  <p>Вы успешно восстановили все системы лаборатории и готовы к контрольной работе!</p>
+  <div class="legend">
+    <h3 style="color: #4ecca3; margin-bottom: 15px;">Что вы повторили:</h3>
+    <p>✓ Правила работы с микроскопом и расчёт увеличения</p>
+    <p>✓ Клеточная оболочка — защита и форма клетки</p>
+    <p>✓ Ядро — управление клеткой и хранение информации</p>
+    <p>✓ Вакуоль — запас воды и веществ</p>
+    <p>✓ Хлоропласты — фотосинтез и зелёный цвет растений</p>
+  </div>
+  <button class="btn" onclick="confirmRestart()">Играть заново</button>
+</div>
+
+<div class="header">
+  <h1>Побег из класса</h1>
+  <div class="subtitle">Биология, 5 класс | Лаборатория юного биолога</div>
+  <div class="progress-container">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    <div class="progress-text" id="progressText">Системы: 0/5</div>
+  </div>
+</div>
+
+<div class="scene-wrapper">
+  <div class="scene-container" id="sceneContainer">
+    <img src="room.png" alt="Лаборатория" class="scene-image" id="sceneImage" onerror="showSceneError()">
+    <div class="scene-error" id="sceneError">
+      <p style="font-size: 1.2em; margin-bottom: 15px;">Файл room.png не найден</p>
+      <p>Положите файл room.png в ту же папку, что и этот HTML-файл</p>
+    </div>
+    
+    <div class="marker" id="marker0" style="left: 18%; top: 45%;" onclick="openTask(0)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>
+      <div class="marker-label">Микроскоп</div>
+    </div>
+    
+    <div class="marker" id="marker1" style="left: 50%; top: 50%;" onclick="openTask(1)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <div class="marker-label">Модель клетки</div>
+    </div>
+    
+    <div class="marker" id="marker2" style="left: 19%; top: 77%;" onclick="openTask(2)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <div class="marker-label">Препарат</div>
+    </div>
+    
+    <div class="marker" id="marker3" style="left: 85%; top: 57%;" onclick="openTask(3)">
+      <svg viewBox="0 0 24 24"><path d="M6 2v20M18 2v20M6 12h12M8 6h8M8 18h8"/></svg>
+      <div class="marker-label">Пробирка</div>
+    </div>
+    
+    <div class="marker" id="marker4" style="left: 40%; top: 15%;" onclick="openTask(4)">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <div class="marker-label">Гербарий</div>
+    </div>
+    
+    <div class="marker locked" id="markerDoor" style="left: 74%; top: 38%;" onclick="tryOpenDoor()">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div class="marker-label">Дверь</div>
+    </div>
+  </div>
+  <div class="scroll-hint">← листай комнату →</div>
+</div>
+
+<div class="controls">
+  <button class="btn btn-secondary" onclick="showJournal()">Журнал</button>
+  <button class="btn btn-secondary" onclick="confirmRestart()">Начать заново</button>
+</div>
+
+<div class="modal" id="taskModal">
+  <div class="modal-content">
+    <h2 id="taskTitle">Задание</h2>
+    <p id="taskText">Текст задания</p>
+    <div id="taskInputContainer"></div>
+    <div id="taskOptionsContainer"></div>
+    <button class="btn hint-btn" id="hint1Btn" onclick="showHint(1)">Подсказка 1</button>
+    <button class="btn hint-btn" id="hint2Btn" onclick="showHint(2)" disabled>Подсказка 2</button>
+    <button class="btn" id="checkBtn" onclick="checkAnswer()">Проверить</button>
+    <button class="btn btn-secondary" id="closeBtn" onclick="closeModal()">Закрыть</button>
+    <div class="feedback" id="feedback"></div>
+  </div>
+</div>
+
+<div class="modal" id="journalModal">
+  <div class="modal-content">
+    <h2>Журнал заданий</h2>
+    <div id="journalContent"></div>
+    <button class="btn btn-secondary" onclick="closeJournal()">Закрыть</button>
+  </div>
+</div>
+
+<div class="modal" id="confirmModal">
+  <div class="modal-content">
+    <h2>Начать заново?</h2>
+    <p>Весь прогресс будет потерян. Вы уверены?</p>
+    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+      <button class="btn" onclick="restartGame()">Да, начать заново</button>
+      <button class="btn btn-secondary" onclick="closeConfirm()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="setup-coords" id="setupCoords"></div>
+
+<script>
+const tasks = [
+  {
+    title: "Микроскоп",
+    text: "Окуляр увеличивает в 10 раз, объектив — в 20 раз. Во сколько раз увеличивает микроскоп?",
+    type: "number",
+    answer: 200,
+    hint1: "Общее увеличение = увеличение окуляра × увеличение объектива",
+    hint2: "10 × 20 = ?",
+    explanation: "Чтобы узнать общее увеличение микроскопа, нужно перемножить увеличение окуляра и объектива: 10 × 20 = 200 раз",
+    wrongExplanation: "Проверьте формулу: общее увеличение = окуляр × объектив. Попробуйте ещё раз."
+  },
+  {
+    title: "Модель клетки",
+    text: "Что ограничивает клетку снаружи и придаёт ей форму?",
+    type: "choice",
+    options: ["А) Цитоплазма", "Б) Клеточная оболочка", "В) Ядро"],
+    answer: 1,
+    hint1: "Оболочка — это самая внешняя плотная часть, её видно под микроскопом как контур",
+    hint2: "Она жёсткая, в отличие от тонкой мембраны внутри",
+    explanation: "Оболочка — наружный плотный слой растительной клетки, именно она защищает клетку и держит её форму",
+    wrongExplanation: "Подумайте, какая часть клетки находится снаружи и является самой плотной."
+  },
+  {
+    title: "Препарат листа",
+    text: "Какая часть клетки управляет всеми процессами и хранит наследственную информацию?",
+    type: "choice",
+    options: ["А) Ядро", "Б) Вакуоль", "В) Хлоропласты"],
+    answer: 0,
+    hint1: "Это самая заметная тёмная «горошина» внутри клетки",
+    hint2: "Оно есть почти в каждой живой клетке",
+    explanation: "Ядро — главный «командный центр» клетки, в нём хранятся инструкции для всей клетки",
+    wrongExplanation: "Вспомните, какая органелла называется «командным центром» клетки."
+  },
+  {
+    title: "Пробирка с водой",
+    text: "В какой части растительной клетки запасается вода и растворённые вещества?",
+    type: "choice",
+    options: ["А) Цитоплазма", "Б) Хлоропласты", "В) Вакуоль"],
+    answer: 2,
+    hint1: "Это большой прозрачный пузырь в центре взрослой растительной клетки",
+    hint2: "Слово похоже на «вакуум» — там в основном вода",
+    explanation: "Вакуоль — резервуар с клеточным соком; чем она больше, тем клетка упругее",
+    wrongExplanation: "Ищите органеллу, которая работает как резервуар для воды."
+  },
+  {
+    title: "Гербарий",
+    text: "В каких органоидах идёт фотосинтез и из-за которых лист зелёный?",
+    type: "choice",
+    options: ["А) Хлоропласты", "Б) Ядро", "В) Вакуоль"],
+    answer: 0,
+    hint1: "Название происходит от греческого «хлорос» — зелёный",
+    hint2: "Они есть только в клетках растений и некоторых водорослей",
+    explanation: "Хлоропласты содержат хлорофилл — зелёное вещество, которое ловит свет и делает возможным фотосинтез",
+    wrongExplanation: "Вспомните, какие органеллы содержат зелёный пигмент хлорофилл."
+  }
+];
+
+let currentTask = null;
+let selectedOption = null;
+let solvedTasks = [];
+let hintsUsed = [false, false];
+let closeBtnLocked = false;
+
+function startGame() {
+  document.getElementById('startScreen').classList.remove('active');
+  loadProgress();
+  updateProgress();
+}
+
+function openTask(index) {
+  if (solvedTasks.includes(index)) return;
+  
+  currentTask = index;
+  const task = tasks[index];
+  
+  document.getElementById('taskTitle').textContent = task.title;
+  document.getElementById('taskText').textContent = task.text;
+  
+  const inputContainer = document.getElementById('taskInputContainer');
+  const optionsContainer = document.getElementById('taskOptionsContainer');
+  
+  inputContainer.innerHTML = '';
+  optionsContainer.innerHTML = '';
+  
+  if (task.type === 'number') {
+    inputContainer.innerHTML = '<input type="number" class="task-input" id="taskInput" placeholder="Введите число">';
+  } else if (task.type === 'choice') {
+    task.options.forEach((option, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.textContent = option;
+      btn.onclick = () => selectOption(i, btn);
+      optionsContainer.appendChild(btn);
+    });
+  }
+  
+  document.getElementById('hint1Btn').disabled = false;
+  document.getElementById('hint2Btn').disabled = true;
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('closeBtn').disabled = false;
+  
+  hintsUsed = [false, false];
+  selectedOption = null;
+  closeBtnLocked = false;
+  
+  document.getElementById('taskModal').classList.add('active');
+}
+
+function selectOption(index, btn) {
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedOption = index;
+}
+
+function showHint(num) {
+  const task = tasks[currentTask];
+  const feedback = document.getElementById('feedback');
+  
+  if (num === 1) {
+    feedback.textContent = 'Подсказка: ' + task.hint1;
+    feedback.className = 'feedback correct';
+    document.getElementById('hint1Btn').disabled = true;
+    document.getElementById('hint2Btn').disabled = false;
+    hintsUsed[0] = true;
+  } else if (num === 2) {
+    feedback.textContent = 'Подсказка: ' + task.hint2;
+    feedback.className = 'feedback correct';
+    document.getElementById('hint2Btn').disabled = true;
+    hintsUsed[1] = true;
+  }
+}
+
+function checkAnswer() {
+  const task = tasks[currentTask];
+  const feedback = document.getElementById('feedback');
+  let isCorrect = false;
+  
+  if (task.type === 'number') {
+    const input = document.getElementById('taskInput').value.trim();
+    const numValue = parseFloat(input.replace(',', '.'));
+    isCorrect = numValue === task.answer;
+  } else if (task.type === 'choice') {
+    if (selectedOption === null) {
+      feedback.textContent = 'Выберите вариант ответа';
+      feedback.className = 'feedback incorrect';
+      return;
+    }
+    isCorrect = selectedOption === task.answer;
+  }
+  
+  if (isCorrect) {
+    feedback.textContent = '✓ Верно! ' + task.explanation;
+    feedback.className = 'feedback correct';
+    document.getElementById('marker' + currentTask).classList.add('solved');
+    document.getElementById('marker' + currentTask).innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><div class="marker-label">' + task.title + '</div>';
+    
+    if (!solvedTasks.includes(currentTask)) {
+      solvedTasks.push(currentTask);
+      saveProgress();
+      updateProgress();
+    }
+    
+    closeBtnLocked = true;
+    document.getElementById('closeBtn').disabled = true;
+    setTimeout(() => {
+      closeModal();
+    }, 2000);
+  } else {
+    feedback.textContent = '✗ Неверно. ' + task.wrongExplanation;
+    feedback.className = 'feedback incorrect';
+  }
+}
+
+function closeModal() {
+  if (closeBtnLocked) return;
+  document.getElementById('taskModal').classList.remove('active');
+}
+
+function tryOpenDoor() {
+  if (solvedTasks.length === 5) {
+    document.getElementById('markerDoor').classList.remove('locked');
+    document.getElementById('markerDoor').classList.add('solved');
+    document.getElementById('markerDoor').innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><div class="marker-label">Выход</div>';
+    setTimeout(() => showFinal(), 1000);
+  } else {
+    const feedback = document.createElement('div');
+    feedback.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #2d2d44; padding: 20px; border-radius: 12px; border: 2px solid #ffd700; z-index: 150; text-align: center;';
+    feedback.innerHTML = '<p style="margin-bottom: 15px;">Дверь заперта. Решено заданий: ' + solvedTasks.length + '/5</p><button class="btn" onclick="this.parentElement.remove()">Понятно</button>';
+    document.body.appendChild(feedback);
+  }
+}
+
+function showFinal() {
+  document.getElementById('finalScreen').classList.add('active');
+  localStorage.removeItem('escapeRoomProgress');
+}
+
+function updateProgress() {
+  const progress = (solvedTasks.length / 5) * 100;
+  document.getElementById('progressFill').style.width = progress + '%';
+  document.getElementById('progressText').textContent = 'Системы: ' + solvedTasks.length + '/5';
+}
+
+function saveProgress() {
+  localStorage.setItem('escapeRoomProgress', JSON.stringify(solvedTasks));
+}
+
+function loadProgress() {
+  const saved = localStorage.getItem('escapeRoomProgress');
+  if (saved) {
+    solvedTasks = JSON.parse(saved);
+    solvedTasks.forEach(index => {
+      const marker = document.getElementById('marker' + index);
+      marker.classList.add('solved');
+      marker.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><div class="marker-label">' + tasks[index].title + '</div>';
+    });
+  }
+}
+
+function confirmRestart() {
+  document.getElementById('confirmModal').classList.add('active');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('active');
+}
+
+function restartGame() {
+  solvedTasks = [];
+  localStorage.removeItem('escapeRoomProgress');
+  
+  for (let i = 0; i < 5; i++) {
+    const marker = document.getElementById('marker' + i);
+    marker.classList.remove('solved');
+    const icons = [
+      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>',
+      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+      '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
+      '<svg viewBox="0 0 24 24"><path d="M6 2v20M18 2v20M6 12h12M8 6h8M8 18h8"/></svg>',
+      '<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'
+    ];
+    marker.innerHTML = icons[i] + '<div class="marker-label">' + tasks[i].title + '</div>';
+  }
+  
+  const door = document.getElementById('markerDoor');
+  door.classList.remove('solved');
+  door.classList.add('locked');
+  door.innerHTML = '<svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><div class="marker-label">Дверь</div>';
+  
+  updateProgress();
+  document.getElementById('finalScreen').classList.remove('active');
+  document.getElementById('confirmModal').classList.remove('active');
+  document.getElementById('startScreen').classList.add('active');
+}
+
+function showJournal() {
+  const content = document.getElementById('journalContent');
+  content.innerHTML = '';
+  
+  tasks.forEach((task, i) => {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding: 15px; margin-bottom: 10px; background: #1a1a2e; border-radius: 8px; border-left: 4px solid ' + (solvedTasks.includes(i) ? '#4ecca3' : '#ffd700');
+    item.innerHTML = '<h3 style="color: #4ecca3; margin-bottom: 10px;">' + task.title + (solvedTasks.includes(i) ? ' ✓' : '') + '</h3><p>' + task.text + '</p>';
+    content.appendChild(item);
+  });
+  
+  document.getElementById('journalModal').classList.add('active');
+}
+
+function closeJournal() {
+  document.getElementById('journalModal').classList.remove('active');
+}
+
+function showSceneError() {
+  document.getElementById('sceneImage').style.display = 'none';
+  document.getElementById('sceneError').classList.add('active');
+}
+
+if (window.location.hash === '#setup') {
+  document.getElementById('sceneImage').addEventListener('click', function(e) {
+    const rect = this.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(0);
+    const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(0);
+    const coordsEl = document.getElementById('setupCoords');
+    coordsEl.textContent = 'left: ' + x + '%, top: ' + y + '%';
+    coordsEl.classList.add('active');
+    setTimeout(() => coordsEl.classList.remove('active'), 3000);
+  });
+}
+</script>
+
+</body>
+</html>
